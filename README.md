@@ -1,5 +1,7 @@
 # Cinematch: Content-Based Movie Recommendation System
 
+**Live Application**: [cinematch.streamlit.app](https://cinematch-8jwpwrl9xuemkumaa6jf2n.streamlit.app/)
+
 Cinematch is an end-to-end movie recommendation engine that computes content similarities across movie plots, genres, cast members, directors, and thematic keywords. The system utilizes natural language processing and vector space modeling on the TMDB 5000 dataset, backed by a high-performance Streamlit frontend that renders recommendations through an embedded single-page application.
 
 ![Cinematch Application Interface](assets/cinematch-preview.png)
