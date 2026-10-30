@@ -2,6 +2,8 @@
 
 Cinematch is an end-to-end movie recommendation engine that computes content similarities across movie plots, genres, cast members, directors, and thematic keywords. The system utilizes natural language processing and vector space modeling on the TMDB 5000 dataset, backed by a high-performance Streamlit frontend that renders recommendations through an embedded single-page application.
 
+![Cinematch Application Interface](assets/cinematch-preview.png)
+
 ---
 
 ## System Architecture and Workflow
@@ -88,7 +90,9 @@ The selected features require custom parsing because `genres`, `keywords`, `cast
 
 The preprocessed text features are combined into a single unified column named `tags`:
 
-$$\text{tags} = \text{overview} + \text{genres} + \text{keywords} + \text{cast} + \text{crew}$$
+```
+tags = overview + genres + keywords + cast + crew
+```
 
 The combined string is converted to lowercase to ensure case-insensitive matching.
 
@@ -110,7 +114,9 @@ In high-dimensional text spaces (5,000 dimensions), Euclidean distance (L2 norm)
 
 To evaluate similarity purely on content direction rather than document size, the cosine similarity metric is employed:
 
-$$\text{similarity}(\mathbf{A}, \mathbf{B}) = \cos(\theta) = \frac{\mathbf{A} \cdot \mathbf{B}}{\|\mathbf{A}\|_2 \|\mathbf{B}\|_2} = \frac{\sum_{k=1}^{n} A_k B_k}{\sqrt{\sum_{k=1}^{n} A_k^2} \sqrt{\sum_{k=1}^{n} B_k^2}}$$
+$$
+\text{similarity}(\mathbf{A}, \mathbf{B}) = \cos(\theta) = \frac{\mathbf{A} \cdot \mathbf{B}}{\|\mathbf{A}\| \|\mathbf{B}\|} = \frac{\sum_{k=1}^{n} A_k B_k}{\sqrt{\sum_{k=1}^{n} A_k^2} \sqrt{\sum_{k=1}^{n} B_k^2}}
+$$
 
 - When two movies share identical vocabulary proportions, $\cos(\theta) = 1.0$.
 - When two movies share no overlapping vocabulary, $\cos(\theta) = 0.0$.
@@ -121,15 +127,27 @@ The pairwise comparison across all 4,806 movies produces a symmetric $4806 \time
 
 The recommendation logic operates via index-based lookup:
 
-1. Locate the row index of the user-specified title in the dataset:
-   $$\text{idx} = \text{DataFrame}[\text{title} == \text{target}].\text{index}[0]$$
-2. Extract the corresponding similarity row vector:
-   $$\mathbf{s} = \text{similarity}[\text{idx}]$$
-3. Enumerate the vector to preserve movie indices alongside their similarity scores:
-   $$\text{indexed\_scores} = \big[ (j, s_j) \text{ for } j \in [0, N-1] \big]$$
-4. Sort the pairs in descending order based on the similarity score $s_j$.
-5. Slice elements from index 1 to $K+1$, excluding index 0 because a movie has a trivial cosine similarity of 1.0 with itself.
-6. Map the extracted indices back to movie titles and return the ranked list.
+1. Locate the row index of the target movie title:
+   ```python
+   movie_index = df[df['title'] == movie].index[0]
+   ```
+2. Retrieve the similarity vector corresponding to that movie index:
+   ```python
+   distances = similarity[movie_index]
+   ```
+3. Enumerate the vector to pair each movie's index with its similarity score:
+   ```python
+   enumerated_scores = list(enumerate(distances))
+   ```
+4. Sort the pairs in descending order based on the similarity score:
+   ```python
+   sorted_scores = sorted(enumerated_scores, reverse=True, key=lambda x: x[1])
+   ```
+5. Extract the top-K entries, slicing from index 1 to K+1 to exclude the query movie itself (which always has an index score of 1.0 against itself):
+   ```python
+   top_matches = sorted_scores[1:K+1]
+   ```
+6. Resolve each extracted index back to its corresponding movie title from the DataFrame.
 
 ---
 
@@ -168,6 +186,8 @@ cinematch/
 |-- requirements.txt        # Python dependency manifest
 |-- .gitignore              # Ignored files, cache directories, and large artifacts
 |-- README.md               # Project documentation
+|-- assets/
+|   |-- cinematch-preview.png # Application interface preview
 |-- data/
 |   |-- README.md           # Instructions for downloading raw TMDB datasets
 |-- notebooks/
