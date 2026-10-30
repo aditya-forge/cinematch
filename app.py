@@ -13,6 +13,7 @@ Files needed beside the app: movie.pkl, similarity.pkl
 """
 
 import json
+import os
 import pickle
 import re
 from concurrent.futures import ThreadPoolExecutor
@@ -77,26 +78,29 @@ def _imdb_info(title):
 def build_payload():
     with open("movie.pkl", "rb") as f:
         movies = pd.DataFrame(pickle.load(f))
-    with open("similarity.pkl", "rb") as f:
-        similarity = pickle.load(f)
-
-    n = len(movies)
-    if n != len(similarity):
-        raise ValueError(f"Movie data has {n} rows, but similarity data has "
-                         f"{len(similarity)} rows.")
-
-    sim = np.array(similarity, dtype=np.float32)  # copy
-    np.fill_diagonal(sim, -1.0)
-    k = min(K, n - 1)
-    part = np.argpartition(-sim, k - 1, axis=1)[:, :k]
-    rows = np.arange(n)[:, None]
-    order = np.argsort(-sim[rows, part], axis=1)
-    top = part[rows, order]
-    scores = np.clip(np.rint(sim[rows, top] * 100), 0, 100).astype(int)
-
-    recs = [[int(x) for pair in zip(top[i].tolist(), scores[i].tolist()) for x in pair]
-            for i in range(n)]
     titles = movies["title"].astype(str).tolist()
+    n = len(movies)
+
+    if os.path.exists("recs.pkl"):
+        with open("recs.pkl", "rb") as f:
+            recs = pickle.load(f)
+    elif os.path.exists("similarity.pkl"):
+        with open("similarity.pkl", "rb") as f:
+            similarity = pickle.load(f)
+        if n != len(similarity):
+            raise ValueError(f"Movie data has {n} rows, but similarity data has {len(similarity)} rows.")
+        sim = np.array(similarity, dtype=np.float32)
+        np.fill_diagonal(sim, -1.0)
+        k = min(K, n - 1)
+        part = np.argpartition(-sim, k - 1, axis=1)[:, :k]
+        rows = np.arange(n)[:, None]
+        order = np.argsort(-sim[rows, part], axis=1)
+        top = part[rows, order]
+        scores = np.clip(np.rint(sim[rows, top] * 100), 0, 100).astype(int)
+        recs = [[int(x) for pair in zip(top[i].tolist(), scores[i].tolist()) for x in pair]
+                for i in range(n)]
+    else:
+        raise FileNotFoundError("recs.pkl or similarity.pkl")
 
     start = 0
     for t in PREFERRED_START:
@@ -637,8 +641,7 @@ render();
 try:
     html_page = build_payload()
 except FileNotFoundError as error:
-    st.error(f"Could not find {error.filename}. Put movie.pkl and similarity.pkl "
-             "in the same folder as this app.")
+    st.error(f"Could not find model artifacts ({error}). Ensure movie.pkl and recs.pkl (or similarity.pkl) are present in the app root.")
     st.stop()
 except Exception as error:
     st.error(f"Could not load the recommender data: {error}")

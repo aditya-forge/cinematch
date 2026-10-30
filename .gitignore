@@ -17,7 +17,9 @@ env/
 *.nbconvert.*
 
 # ---------- Data & model artefacts ----------
-*.pkl
+similarity.pkl
+movies.pkl
+movie_dict.pkl
 *.pickle
 *.csv
 *.h5
@@ -37,7 +39,7 @@ Thumbs.db
 desktop.ini
 
 # ---------- Streamlit ----------
-.streamlit/
+.streamlit/secrets.toml
 
 # ---------- Misc ----------
 *.log

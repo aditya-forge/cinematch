@@ -184,16 +184,21 @@ Standard Streamlit applications rerun the entire Python script from top to botto
 cinematch/
 |-- app.py                  # Streamlit application and embedded SPA
 |-- requirements.txt        # Python dependency manifest
+|-- Dockerfile              # Container deployment configuration
+|-- .dockerignore           # Container build exclusions
 |-- .gitignore              # Ignored files, cache directories, and large artifacts
 |-- README.md               # Project documentation
+|-- .streamlit/
+|   |-- config.toml         # Streamlit server and theme configuration
 |-- assets/
 |   |-- cinematch-preview.png # Application interface preview
 |-- data/
 |   |-- README.md           # Instructions for downloading raw TMDB datasets
 |-- notebooks/
 |   |-- analysis.ipynb      # EDA, feature engineering, vectorization, and artifact export
-|-- movie.pkl               # Processed movies DataFrame (generated via notebook)
-|-- similarity.pkl          # Cosine similarity matrix (generated via notebook, gitignored)
+|-- movie.pkl               # Processed movies DataFrame
+|-- recs.pkl                # Precomputed top-20 neighbours (~480 KB, tracked for cloud deployment)
+|-- similarity.pkl          # Full cosine similarity matrix (184 MB, generated via notebook, gitignored)
 ```
 
 ---
@@ -244,6 +249,39 @@ streamlit run app.py
 ```
 
 The application will be accessible at `http://localhost:8501`.
+
+---
+
+## Deployment
+
+Cinematch is pre-configured for cloud and containerized deployment using the tracked lightweight recommendation model (`recs.pkl`, ~480 KB), allowing deployment without memory exhaustion or external storage requirements.
+
+### Deploy to Streamlit Community Cloud (Recommended)
+
+1. Fork or push this repository to your GitHub account (`aditya-forge/cinematch`).
+2. Visit [share.streamlit.io](https://share.streamlit.io/) and authenticate with your GitHub account.
+3. Click **New app**.
+4. Configure the deployment settings:
+   - **Repository**: `aditya-forge/cinematch`
+   - **Branch**: `main`
+   - **Main file path**: `app.py`
+5. Click **Deploy**. The application will initialize and run in dark mode automatically.
+
+### Deploy with Docker
+
+A multi-stage `Dockerfile` is provided in the repository root.
+
+1. Build the Docker image:
+   ```bash
+   docker build -t cinematch:latest .
+   ```
+
+2. Run the container:
+   ```bash
+   docker run -d -p 8501:8501 --name cinematch cinematch:latest
+   ```
+
+3. Open your browser and navigate to `http://localhost:8501`.
 
 ---
 
